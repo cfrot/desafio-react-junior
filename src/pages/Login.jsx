@@ -13,7 +13,6 @@ function Login() {
 
   const navigate = useNavigate();
 
-  // Se já existir um token salvo, redireciona para o dashboard
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -31,30 +30,48 @@ function Login() {
     try {
       const resposta = await loginApi(email, senha);
 
-      // Salva os dados do usuário autenticado
       localStorage.setItem("token", resposta.token);
-
       localStorage.setItem(
         "usuario",
         JSON.stringify(resposta.usuario)
       );
 
-      // Redireciona para o dashboard
       navigate("/dashboard");
-    } catch (erro) {
-      setErro(erro.message);
+    } catch (erroRecebido) {
+      setErro(erroRecebido.message);
     } finally {
       setCarregando(false);
     }
   }
 
   return (
-    <main>
-      <section>
-        <h1>Painel de Solicitações</h1>
-        <p>Entre com sua conta para acessar o sistema.</p>
+    <main className="login-page">
+      <section className="login-card">
+        <div className="brand">
+          <div className="brand-icon">
+            <span />
+            <span />
+            <span />
+          </div>
 
-        <form onSubmit={realizarLogin}>
+          <div>
+            <h1>
+              Solicita<span>+</span>
+            </h1>
+            <p>Painel de Solicitações</p>
+          </div>
+        </div>
+
+        <div className="login-heading">
+          <h2>Bem-vindo de volta!</h2>
+          <p>
+            Entre com seus dados para acessar
+            <br />
+            o painel de solicitações.
+          </p>
+        </div>
+
+        <form className="login-form" onSubmit={realizarLogin}>
           <Input
             label="E-mail"
             name="email"
@@ -73,12 +90,21 @@ function Login() {
             placeholder="Digite sua senha"
           />
 
-          {erro && <p>{erro}</p>}
+          {erro && <p className="error-message">{erro}</p>}
 
-          <Button type="submit" disabled={carregando}>
-            {carregando ? "Entrando..." : "Entrar"}
+          <Button
+            type="submit"
+            disabled={carregando}
+            className="login-button"
+          >
+            {carregando ? "Entrando..." : "→ Entrar na plataforma"}
           </Button>
         </form>
+
+        <footer className="login-footer">
+          <span>▣</span>
+          Seus dados estão protegidos
+        </footer>
       </section>
     </main>
   );

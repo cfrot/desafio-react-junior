@@ -96,8 +96,8 @@ let solicitacoes = [
   },
 ];
 
-function simularLatencia() {
-  return new Promise((resolve) => setTimeout(resolve, 800));
+function aguardar(ms = 800) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function criarErro(mensagem, status) {
@@ -106,80 +106,134 @@ function criarErro(mensagem, status) {
   return erro;
 }
 
+function extrairToken(headers = {}) {
+  const authorization = headers.Authorization;
+
+  if (!authorization?.startsWith("Bearer ")) {
+    throw criarErro("Não autorizado.", 401);
+  }
+
+  return authorization.replace("Bearer ", "");
+}
+
 function buscarUsuarioPeloToken(token) {
   return usuarios.find((usuario) => usuario.token === token);
 }
 
-export async function loginApi(email, senha) {
-  await simularLatencia();
+async function mockApi(url, options = {}) {
+  await aguardar();
 
-  const usuarioEncontrado = usuarios.find(
-    (usuario) =>
-      usuario.email === email &&
-      usuario.senha === senha
-  );
+  const method = options.method ?? "GET";
 
-  if (!usuarioEncontrado) {
-    throw criarErro("E-mail ou senha inválidos.", 401);
+  if (url === "/auth/login" && method === "POST") {
+    const { email, senha } = JSON.parse(options.body ?? "{}");
+
+    const usuarioEncontrado = usuarios.find(
+      (usuario) =>
+        usuario.email === email &&
+        usuario.senha === senha
+    );
+
+    if (!usuarioEncontrado) {
+      throw criarErro("E-mail ou senha inválidos.", 401);
+    }
+
+    const {
+      senha: _,
+      token,
+      ...usuarioSemSenha
+    } = usuarioEncontrado;
+
+    return {
+      token,
+      usuario: usuarioSemSenha,
+    };
   }
 
-  const { senha: _, token, ...usuarioSemSenha } =
-    usuarioEncontrado;
+  if (url === "/solicitacoes" && method === "GET") {
+    const token = extrairToken(options.headers);
+    const usuario = buscarUsuarioPeloToken(token);
 
-  return {
-    token,
-    usuario: usuarioSemSenha,
-  };
+    if (!usuario) {
+      throw criarErro("Não autorizado.", 401);
+    }
+
+    if (usuario.perfil === "EMPRESA") {
+      return solicitacoes.filter(
+        (solicitacao) =>
+          solicitacao.empresa === usuario.empresa
+      );
+    }
+
+    if (usuario.perfil === "CONTADOR") {
+      return solicitacoes.filter((solicitacao) =>
+        usuario.empresasAtendidas.includes(
+          solicitacao.empresa
+        )
+      );
+    }
+
+    return [...solicitacoes];
+  }
+
+  const deleteMatch = url.match(/^\/solicitacoes\/(\d+)$/);
+
+  if (deleteMatch && method === "DELETE") {
+    const token = extrairToken(options.headers);
+    const usuario = buscarUsuarioPeloToken(token);
+
+    if (!usuario) {
+      throw criarErro("Não autorizado.", 401);
+    }
+
+    if (usuario.perfil !== "ADMIN") {
+      throw criarErro(
+        "Você não possui permissão para excluir.",
+        403
+      );
+    }
+
+    const id = Number(deleteMatch[1]);
+
+    solicitacoes = solicitacoes.filter(
+      (solicitacao) => solicitacao.id !== id
+    );
+
+    return {
+      sucesso: true,
+    };
+  }
+
+  throw criarErro("Endpoint não encontrado.", 404);
+}
+
+export async function loginApi(email, senha) {
+  return mockApi("/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      senha,
+    }),
+  });
 }
 
 export async function buscarSolicitacoesApi(token) {
-  await simularLatencia();
-
-  const usuario = buscarUsuarioPeloToken(token);
-
-  if (!usuario) {
-    throw criarErro("Não autorizado.", 401);
-  }
-
-  if (usuario.perfil === "EMPRESA") {
-    return solicitacoes.filter(
-      (solicitacao) =>
-        solicitacao.empresa === usuario.empresa
-    );
-  }
-
-  if (usuario.perfil === "CONTADOR") {
-    return solicitacoes.filter((solicitacao) =>
-      usuario.empresasAtendidas.includes(
-        solicitacao.empresa
-      )
-    );
-  }
-
-  return [...solicitacoes];
+  return mockApi("/solicitacoes", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 }
 
 export async function excluirSolicitacaoApi(id, token) {
-  await simularLatencia();
-
-  const usuario = buscarUsuarioPeloToken(token);
-
-  if (!usuario) {
-    throw criarErro("Não autorizado.", 401);
-  }
-
-  if (usuario.perfil !== "ADMIN") {
-    throw criarErro(
-      "Você não possui permissão para excluir.",
-      403
-    );
-  }
-
-  solicitacoes = solicitacoes.filter(
-    (solicitacao) => solicitacao.id !== id
-  );
-
-  return {
-    sucesso: true,
-  };
+  return mockApi(`/solicitacoes/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 }

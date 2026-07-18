@@ -18,7 +18,6 @@ function Dashboard() {
   const [idExcluindo, setIdExcluindo] = useState(null);
 
   const token = localStorage.getItem("token");
-
   const usuarioSalvo = localStorage.getItem("usuario");
 
   const usuario = usuarioSalvo
@@ -104,91 +103,133 @@ function Dashboard() {
     return null;
   }
 
+  const iniciais = usuario.nome
+    .split(" ")
+    .slice(0, 2)
+    .map((nome) => nome.charAt(0))
+    .join("");
+
   return (
-    <main>
-      <header>
-        <div>
-          <h1>Painel de Solicitações</h1>
+    <main className="dashboard-page">
+      <section className="dashboard-container">
+        <header className="dashboard-header">
+          <div className="brand dashboard-brand">
+            <div className="brand-icon">
+              <span />
+              <span />
+              <span />
+            </div>
 
-          <p>
-            Olá, <strong>{usuario.nome}</strong>
-          </p>
-
-          <p>
-            Perfil: <strong>{usuario.perfil}</strong>
-          </p>
-        </div>
-
-        <Button onClick={logout}>
-          Sair
-        </Button>
-      </header>
-
-      {usuario.perfil === "EMPRESA" && (
-        <section>
-          <p>Empresa: {usuario.empresa}</p>
-
-          <Button
-            onClick={() =>
-              alert(
-                "Funcionalidade de criação não foi exigida no desafio."
-              )
-            }
-          >
-            Nova solicitação
-          </Button>
-        </section>
-      )}
-
-      {usuario.perfil === "CONTADOR" && (
-        <section>
-          <p>
-            Empresas atendidas:{" "}
-            {usuario.empresasAtendidas.join(", ")}
-          </p>
-        </section>
-      )}
-
-      <section>
-        <h2>Solicitações</h2>
-
-        {carregando && <p>Carregando solicitações...</p>}
-
-        {!carregando && erro && (
-          <div>
-            <p>{erro}</p>
-
-            <Button onClick={carregarSolicitacoes}>
-              Tentar novamente
-            </Button>
-          </div>
-        )}
-
-        {!carregando &&
-          !erro &&
-          solicitacoes.length === 0 && (
-            <p>Nenhuma solicitação encontrada.</p>
-          )}
-
-        {!carregando &&
-          !erro &&
-          solicitacoes.length > 0 && (
             <div>
-              {solicitacoes.map((solicitacao) => (
-                <SolicitacaoCard
-                  key={solicitacao.id}
-                  solicitacao={solicitacao}
-                  podeExcluir={
-                    usuario.perfil === "ADMIN"
-                  }
-                  excluindo={
-                    idExcluindo === solicitacao.id
-                  }
-                  onExcluir={excluirSolicitacao}
-                />
-              ))}
+              <h1>
+                Solicita<span>+</span>
+              </h1>
+              <p>Painel de Solicitações</p>
+            </div>
+          </div>
+
+          <div className="user-summary">
+            <div className="user-avatar">{iniciais}</div>
+
+            <div>
+              <strong>{usuario.nome}</strong>
+              <span>{usuario.perfil}</span>
+            </div>
+          </div>
+        </header>
+
+        <section className="dashboard-welcome">
+          <div>
+            <h2>
+              Olá, <span>{usuario.nome}!</span>
+            </h2>
+
+            <p>
+              Confira abaixo as solicitações disponíveis
+              para o seu perfil.
+            </p>
+
+            {usuario.perfil === "CONTADOR" && (
+              <p className="companies">
+                Empresas atendidas:{" "}
+                {usuario.empresasAtendidas.join(", ")}
+              </p>
+            )}
+          </div>
+
+          {usuario.perfil === "EMPRESA" && (
+            <Button
+              className="new-request-button"
+              onClick={() =>
+                alert(
+                  "Funcionalidade de criação não exigida no desafio."
+                )
+              }
+            >
+              ＋ Nova solicitação
+            </Button>
+          )}
+        </section>
+
+        <section className="requests-section">
+          <div className="section-title">
+            <div className="section-icon">▤</div>
+            <h2>Solicitações</h2>
+          </div>
+
+          {carregando && (
+            <div className="state-message">
+              Carregando solicitações...
             </div>
           )}
+
+          {!carregando && erro && (
+            <div className="state-message error-state">
+              <p>{erro}</p>
+
+              <Button onClick={carregarSolicitacoes}>
+                Tentar novamente
+              </Button>
+            </div>
+          )}
+
+          {!carregando &&
+            !erro &&
+            solicitacoes.length === 0 && (
+              <div className="state-message">
+                Nenhuma solicitação encontrada.
+              </div>
+            )}
+
+          {!carregando &&
+            !erro &&
+            solicitacoes.length > 0 && (
+              <div className="requests-list">
+                {solicitacoes.map((solicitacao) => (
+                  <SolicitacaoCard
+                    key={solicitacao.id}
+                    solicitacao={solicitacao}
+                    podeExcluir={
+                      usuario.perfil === "ADMIN"
+                    }
+                    excluindo={
+                      idExcluindo === solicitacao.id
+                    }
+                    onExcluir={excluirSolicitacao}
+                  />
+                ))}
+              </div>
+            )}
+        </section>
+
+        <footer className="dashboard-footer">
+          <Button
+            className="logout-button"
+            onClick={logout}
+          >
+            ↪ Sair da plataforma
+          </Button>
+        </footer>
       </section>
     </main>
   );

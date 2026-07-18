@@ -7,7 +7,7 @@ function Input({
   placeholder,
 }) {
   return (
-    <div>
+    <div className="input-group">
       <label htmlFor={name}>{label}</label>
 
       <input
@@ -17,6 +17,7 @@ function Input({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        required
       />
     </div>
   );
